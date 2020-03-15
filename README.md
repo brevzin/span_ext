@@ -48,6 +48,11 @@ This is because `span<int>` and `vector<int>` do not share a common reference
 (while `span<int const>` and `vector<int>` do) - because `span<int>` is not
 constructible from a `vector<int>` rvalue.
 
+# Usage
+
+Just include `<span_ext/span_ext.h>` and it's as if `std::span` itself had
+comparison operators already.
+
 # Compiler requirements
 
 These operators depend on the existence of `std::span`, the Concepts language
