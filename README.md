@@ -41,6 +41,11 @@ memory) but comparing against (3) non-contiguous containers or (4) containers
 of a different type are not supported. There is always `std::ranges::equal` for
 that.
 
+In other words, in this repo,
+`span<T>` is comparable with any `contiguous_range` with
+`value_type` `U` such that `remove_cvref_t<T>` and `remove_cvref_t<U>` are the
+same type.
+
 Note that while with this design, you can compare a `span<int>` to a `vector<int>`,
 it will still be the case that `std::equality_comparable_with<span<int>, vector<int>>`
 fails while `std::equality_comparable_with<span<int const>, vector<int>>` holds.
