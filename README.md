@@ -63,3 +63,8 @@ comparison operators already.
 These operators depend on the existence of `std::span`, the Concepts language
 feature, some of the functionality introduced by Ranges, and `<=>`. Currently,
 that's just gcc trunk.
+
+# Testing
+
+Until I figure out how to use very recent compilers on Travis-CI, using
+compiler explorer totally counts as testing right? [link](https://godbolt.org/z/cpZWc-).
