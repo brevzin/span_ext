@@ -73,7 +73,7 @@ namespace std {
     {
         return ::std::equal(
             lhs.begin(), lhs.end(),
-            rhs.begin(), rhs.end());        
+            ranges::begin(rhs), ranges::end(rhs));
     }
 
     template <span_ext_expos::synth_comparable T, size_t E,
@@ -82,7 +82,7 @@ namespace std {
     {
         return ::std::lexicographical_compare_three_way(
             lhs.begin(), lhs.end(),
-            rhs.begin(), rhs.end(),
+            ranges::begin(rhs), ranges::end(rhs),
             span_ext_expos::synth_three_way);
     }    
 }
