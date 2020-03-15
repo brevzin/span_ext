@@ -23,8 +23,7 @@ namespace span_ext_expos {
     };
 
     template <typename T>
-    concept synth_comparable = std::invocable<
-        decltype(synth_three_way), T, T>;
+    concept synth_comparable = std::invocable<decltype(synth_three_way), T, T>;
 
     template <typename T, typename U>
     concept sameish = std::same_as<std::remove_cvref_t<T>, std::remove_cvref_t<U>>;
