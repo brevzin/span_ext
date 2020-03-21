@@ -61,8 +61,15 @@ comparison operators already.
 # Compiler requirements
 
 These operators depend on the existence of `std::span`, the Concepts language
-feature, some of the functionality introduced by Ranges, and `<=>`. Currently,
-that's just gcc trunk.
+feature, some of the functionality introduced by Ranges, and `<=>`.
+
+As a polyfill the standard library concepts and Ranges, this library will
+fall back to using range-v3.
+
+This library currently works with:
+
+- gcc trunk
+- clang trunk with range-v3
 
 # Testing
 
