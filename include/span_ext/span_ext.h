@@ -125,7 +125,7 @@ namespace span_ext {
         // just loop
         while (first1 != last1) {
             if (first2 == last2) {
-                return strong_ordering::greater;
+                return std::strong_ordering::greater;
             }
             if (auto const c = synth_three_way(*first1, *first2); c != 0) {
                 return c;
