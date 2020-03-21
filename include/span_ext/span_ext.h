@@ -113,7 +113,7 @@ namespace span_ext {
                 auto const len = lencmp < 0 ? len1 : len2;
 
                 if (len != 0) {
-                    auto const c = __builtin_memcmp(&*first1, &*first2, len) <=> c;
+                    auto const c = __builtin_memcmp(&*first1, &*first2, len) <=> 0;
                     if (c != 0) {
                         return c;
                     }
