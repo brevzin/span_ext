@@ -1,52 +1,70 @@
-/*
- Comparison operators for std::span
-
- Copyright (c) 2020 - present, Barry Revzin
-
- Permission is hereby granted, free of charge, to any person obtaining
- a copy of this software and associated documentation files (the
- "Software"), to deal in the Software without restriction, including
- without limitation the rights to use, copy, modify, merge, publish,
- distribute, sublicense, and/or sell copies of the Software, and to
- permit persons to whom the Software is furnished to do so, subject to
- the following conditions:
-
- The above copyright notice and this permission notice shall be
- included in all copies or substantial portions of the Software.
-
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
- --- Optional exception to the license ---
-
- As an exception, if, as a result of your compiling your source code, portions
- of this Software are embedded into a machine-executable object form of such
- source code, you may redistribute such embedded portions in such object form
- without including the above copyright and permission notices.
- */
-
-
-#ifndef SPAN_EXT_COMPARISONS_H
-#define SPAN_EXT_COMPARISONS_H
-
 #include <compare>
-#include <concepts>
+#include <algorithm>
 #include <span>
 
-namespace span_ext_expos {
+#if __has_include(<concepts>) && __has_include(<ranges>)
+#include <concepts>
+#include <ranges>
+
+namespace span_ext {
+    using std::same_as;
+    using std::convertible_to;
+    using std::invocable;
+    using std::equality_comparable;
+    using std::three_way_comparable;
+
+    using std::ranges::begin;
+    using std::ranges::end;
+    using std::ranges::range_value_t;
+    using std::contiguous_iterator;
+    using std::ranges::contiguous_range;
+}
+
+#else
+// rely on range-v3 to provide the implementations of everything
+#include <concepts/concepts.hpp>
+#include <range/v3/functional/concepts.hpp>
+#include <range/v3/range/access.hpp>
+#include <range/v3/range/concepts.hpp>
+#include <range/v3/range/traits.hpp>
+
+namespace span_ext {
+    using concepts::same_as;
+    using concepts::convertible_to;
+    using ranges::invocable;
+    using concepts::equality_comparable;
+
+    template<class T, class Cat>
+    concept compares_as = same_as<std::common_type_t<T, Cat>, Cat>;
+
+    template<class T>
+    concept three_way_comparable = equality_comparable<T> &&
+        requires (std::remove_reference_t<T> const& t) {
+            { t < t } -> convertible_to<bool>;
+            { t > t } -> convertible_to<bool>;
+            { t <= t } -> convertible_to<bool>;
+            { t < t } -> convertible_to<bool>;
+            { t <=> t } -> compares_as<std::partial_ordering>;
+        };
+
+    using ranges::begin;
+    using ranges::end;
+    using ranges::iter_value_t;
+    using ranges::range_value_t;
+    using ranges::contiguous_iterator;
+    using ranges::contiguous_range;
+}
+#endif
+
+namespace span_ext {
   inline constexpr auto synth_three_way =
-    []<class T, class U>(const T& t, const U& u)
+    []<class T>(const T& t, const T& u)
         requires requires {
-            { t < u } -> std::convertible_to<bool>;
-            { u < t } -> std::convertible_to<bool>;
+            { t < u } -> convertible_to<bool>;
+            { u < t } -> convertible_to<bool>;
         }
     {
-        if constexpr (std::three_way_comparable_with<T, U>) {
+        if constexpr (three_way_comparable<T>) {
             return t <=> u;
         } else {
             if (t < u) return std::weak_ordering::less;
@@ -56,36 +74,86 @@ namespace span_ext_expos {
     };
 
     template <typename T>
-    concept synth_comparable = std::invocable<decltype(synth_three_way), T, T>;
+    concept synth_comparable = invocable<decltype(synth_three_way), T, T>;
 
     template <typename T, typename U>
-    concept sameish = std::same_as<std::remove_cvref_t<T>, std::remove_cvref_t<U>>;
+    concept sameish = same_as<std::remove_cvref_t<T>, std::remove_cvref_t<U>>;
 
     template <typename R, typename T>
-    concept contiguous_range_of = std::ranges::contiguous_range<R const>
-        && sameish<T, std::ranges::range_value_t<R const>>;
+    concept contiguous_range_of = contiguous_range<R const>
+        && sameish<T, range_value_t<R const>>;
+
+    template <typename T>
+    concept friendly =
+        (std::is_arithmetic_v<T> && !std::is_signed_v<T>)
+        || std::is_same_v<T, std::byte>;
+
+    template <typename InputIter1, typename InputIter2>
+    auto lexicographical_compare_three_way(
+                    InputIter1 first1, InputIter1 last1,
+                    InputIter2 first2, InputIter2 last2)
+        -> decltype(synth_three_way(*first1, *first2))
+    {
+#if __cpp_lib_three_way_comparison >= 201711L
+        return std::lexicographical_compare_three_way(
+            first1, last1, first2, last2, synth_three_way);
+#else
+        if (!std::is_constant_evaluated()) {
+            // if both iterators are contiguous and refer to memcmp-friendly types
+            if constexpr (contiguous_iterator<InputIter1> &&
+                          contiguous_iterator<InputIter2> &&
+                          same_as<iter_value_t<InputIter1>,
+                                  iter_value_t<InputIter2>> &&
+                          friendly<iter_value_t<InputIter1>>)
+            {
+                auto const len1 = last1 - first1;
+                auto const len2 = last2 - first2;
+
+                auto const lencmp = len1 <=> len2;
+                auto const len = lencmp < 0 ? len1 : len2;
+
+                if (len != 0) {
+                    auto const c = __builtin_memcmp(&*first1, &*first2, len) <=> c;
+                    if (c != 0) {
+                        return c;
+                    }
+                }
+                return lencmp;
+            }
+        }
+
+        // just loop
+        while (first1 != last1) {
+            if (first2 == last2) {
+                return strong_ordering::greater;
+            }
+            if (auto const c = synth_three_way(*first1, *first2); c != 0) {
+                return c;
+            }
+            ++first1;
+            ++first2;
+        }
+        return (first2 == last2) <=> true;
+#endif
+    }
 }
 
 namespace std {
-    template <equality_comparable T, size_t E,
-              span_ext_expos::contiguous_range_of<T> R>
+    template <span_ext::equality_comparable T, size_t E,
+              span_ext::contiguous_range_of<T> R>
     constexpr bool operator==(span<T, E> lhs, R const& rhs)
     {
         return ::std::equal(
             lhs.begin(), lhs.end(),
-            ranges::begin(rhs), ranges::end(rhs));
+            span_ext::begin(rhs), span_ext::end(rhs));
     }
 
-    template <span_ext_expos::synth_comparable T, size_t E,
-              span_ext_expos::contiguous_range_of<T> R>
+    template <span_ext::synth_comparable T, size_t E,
+              span_ext::contiguous_range_of<T> R>
     constexpr auto operator<=>(span<T, E> lhs, R const& rhs)
     {
-        return ::std::lexicographical_compare_three_way(
+        return span_ext::lexicographical_compare_three_way(
             lhs.begin(), lhs.end(),
-            ranges::begin(rhs), ranges::end(rhs),
-            span_ext_expos::synth_three_way);
-    }    
+            span_ext::begin(rhs), span_ext::end(rhs));
+    }
 }
-
-
-#endif
