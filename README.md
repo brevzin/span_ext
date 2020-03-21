@@ -67,4 +67,4 @@ that's just gcc trunk.
 # Testing
 
 Until I figure out how to use very recent compilers on Travis-CI, using
-compiler explorer totally counts as testing right? [link](https://godbolt.org/z/cpZWc-).
+compiler explorer totally counts as testing right? [link](https://godbolt.org/z/yT5kis).
