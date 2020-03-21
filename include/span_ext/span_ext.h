@@ -1,3 +1,6 @@
+#ifndef SPAN_EXT_COMPARISONS_H
+#define SPAN_EXT_COMPARISONS_H
+
 #include <compare>
 #include <algorithm>
 #include <span>
@@ -155,3 +158,5 @@ namespace std {
             span_ext::begin(rhs), span_ext::end(rhs));
     }
 }
+
+#endif
