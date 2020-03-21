@@ -84,9 +84,7 @@ namespace span_ext {
         && sameish<T, range_value_t<R const>>;
 
     template <typename T>
-    concept friendly =
-        (std::is_arithmetic_v<T> && !std::is_signed_v<T>)
-        || std::is_same_v<T, std::byte>;
+    concept memcmp_friendly = sameish<T, std::byte> || sameish<T, unsigned char>;
 
     template <typename InputIter1, typename InputIter2>
     auto lexicographical_compare_three_way(
@@ -102,9 +100,9 @@ namespace span_ext {
             // if both iterators are contiguous and refer to memcmp-friendly types
             if constexpr (contiguous_iterator<InputIter1> &&
                           contiguous_iterator<InputIter2> &&
-                          same_as<iter_value_t<InputIter1>,
+                          sameish<iter_value_t<InputIter1>,
                                   iter_value_t<InputIter2>> &&
-                          friendly<iter_value_t<InputIter1>>)
+                          memcmp_friendly<iter_value_t<InputIter1>>)
             {
                 auto const len1 = last1 - first1;
                 auto const len2 = last2 - first2;
