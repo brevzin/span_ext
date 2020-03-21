@@ -74,4 +74,4 @@ This library currently works with:
 # Testing
 
 Until I figure out how to use very recent compilers on Travis-CI, using
-compiler explorer totally counts as testing right? [link](https://godbolt.org/z/-XsnJk).
+compiler explorer totally counts as testing right? [link](https://godbolt.org/z/kKGGR4).
