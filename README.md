@@ -69,9 +69,16 @@ fall back to using range-v3.
 This library currently works with:
 
 - gcc trunk
-- clang trunk with range-v3
+- clang-10 with range-v3
 
-# Testing
+# Building and Testing
 
-Until I figure out how to use very recent compilers on Travis-CI, using
-compiler explorer totally counts as testing right? [link](https://godbolt.org/z/kKGGR4).
+To test with clang-10, you need to also use range-v3. That can be done as follows:
+
+```
+$ mkdir build && cd build
+$ CC=$(which clang) CXX=$(which clang-10) cmake -G Ninja -DCMAKE_CXX_FLAGS="-std=c++20 -Wall -Wextra" -DSPAN_EXT_LIBCXX=On -DSPAN_EXT_RANGE_V3_PATH=/path/to/range-v3 -DSPAN_EXT_TESTS=On ..
+$ ninja
+$ ninja test
+```
+
