@@ -36,6 +36,12 @@ struct D: B { };
 
 static_assert(equality_comparable_with<std::span<int>, std::vector<int>>);
 static_assert(totally_ordered_with<std::span<int>, std::vector<int>>);
+
+// mixed const-ness is fine
+static_assert(totally_ordered_with<std::span<int>, std::vector<int> const>);
+static_assert(totally_ordered_with<std::span<int const>, std::vector<int>>);
+static_assert(totally_ordered_with<std::span<int const>, std::vector<int> const>);
+
 static_assert(not equality_comparable_with<std::span<int>, std::list<int>>);
 static_assert(not equality_comparable_with<std::span<int>, std::vector<long>>);
 
@@ -56,6 +62,10 @@ T const* end(X<T> const& x)   { return x.v.data() + x.v.size(); }
 
 static_assert(equality_comparable_with<std::span<int const>, X<int>>);
 static_assert(totally_ordered_with<std::span<int const>, X<int>>);
+
+struct NonComparable { };
+static_assert(not equality_comparable_with<std::span<NonComparable>, std::span<NonComparable>>);
+static_assert(not totally_ordered_with<std::span<NonComparable>, std::span<NonComparable>>);
 
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
